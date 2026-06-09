@@ -11,12 +11,9 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
     
     private var collectionView: UICollectionView!
     private let imageStorageService = ImageStorageService()
+    private let personStorageService = PersonStorageService()
     
-    private var people: [Person] = [
-        Person(id: UUID(), name: "Karla", imageName: ""),
-        Person(id: UUID(), name: "Maria", imageName: ""),
-        Person(id: UUID(), name: "João", imageName: "")
-    ]
+    private var people: [Person] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,6 +23,7 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
         
         configureCollectionView()
         configureNavigationBar()
+        people = personStorageService.loadPeople()
     }
     
     @objc private func addNewPerson() {
@@ -105,6 +103,8 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
             let person = Person(id: UUID(), name: name, imageName: imageName)
 
             people.append(person)
+            
+            personStorageService.save(people: people)
 
             let indexPath = IndexPath(item: people.count - 1, section: 0)
 
