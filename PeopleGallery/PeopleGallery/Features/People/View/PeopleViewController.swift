@@ -39,9 +39,15 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
     private func configureCollectionView() {
             
         let layout = UICollectionViewFlowLayout()
+        
+        let padding: CGFloat = 10
+        let spacing: CGFloat = 10
+        let availableWidth = view.bounds.width - (padding * 2) - spacing
+        let cellWidth = availableWidth / 2
 
-        layout.itemSize = CGSize(width: 140, height: 180)
-        layout.sectionInset = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        layout.itemSize = CGSize(width: cellWidth, height: 180)
+        layout.minimumInteritemSpacing = spacing
+        layout.sectionInset = UIEdgeInsets(top: 10, left: padding, bottom: 10, right: padding)
         
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         
