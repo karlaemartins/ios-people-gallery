@@ -7,9 +7,10 @@
 
 import UIKit
 
-final class PeopleViewController: UIViewController {
+final class PeopleViewController: UIViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     
     private var collectionView: UICollectionView!
+    private let imageStorageService = ImageStorageService()
     
     private var people: [Person] = [
         Person(id: UUID(), name: "Karla", imageName: ""),
@@ -24,7 +25,17 @@ final class PeopleViewController: UIViewController {
         view.backgroundColor = .systemBackground
         
         configureCollectionView()
+        configureNavigationBar()
+    }
+    
+    @objc private func addNewPerson() {
         
+        let picker = UIImagePickerController()
+           
+           picker.allowsEditing = true
+           picker.delegate = self
+           
+           present(picker, animated: true)
     }
     
     private func configureCollectionView() {
@@ -56,6 +67,54 @@ final class PeopleViewController: UIViewController {
                 equalTo: view.bottomAnchor)])
         
     }
+    
+    private func configureNavigationBar() {
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewPerson))
+
+    }
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+
+        guard let image = info[.editedImage] as? UIImage else {
+            return
+        }
+
+        guard let imageName = imageStorageService.save(image: image) else {
+            return
+        }
+
+        dismiss(animated: true) { [weak self] in
+            self?.presentNameAlert(for: imageName)
+        }
+    }
+    
+    private func presentNameAlert(for imageName: String) {
+        
+        let alert = UIAlertController(title: "New Person", message: "Enter a name", preferredStyle: .alert)
+
+        alert.addTextField()
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
+            
+            guard let self else { return }
+            guard let name = alert?.textFields?.first?.text else { return }
+
+            let person = Person(id: UUID(), name: name, imageName: imageName)
+
+            people.append(person)
+
+            let indexPath = IndexPath(item: people.count - 1, section: 0)
+
+            collectionView.insertItems(at: [indexPath])
+
+        })
+
+        present(alert, animated: true)
+
+    }
 }
 
 extension PeopleViewController: UICollectionViewDataSource {
@@ -73,8 +132,10 @@ extension PeopleViewController: UICollectionViewDataSource {
         }
         
         let person = people[indexPath.item]
+        
+        let image = imageStorageService.loadImage(named: person.imageName)
 
-        cell.configure(name: person.name, image: nil)
+        cell.configure(name: person.name, image: image)
 
         return cell
     }
