@@ -154,6 +154,30 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
 
         present(alert, animated: true)
     }
+    
+    private func presentDeleteConfirmation(for person: Person, at indexPath: IndexPath) {
+        
+        let alert = UIAlertController(
+                title: "Delete Person",
+                message: "Are you sure you want to delete \(person.name)?",
+                preferredStyle: .alert
+            )
+
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+            alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+
+                guard let self else { return }
+
+                self.people.remove(at: indexPath.item)
+
+                self.personStorageService.save(people: self.people)
+
+                self.collectionView.deleteItems(at: [indexPath])
+            })
+
+            present(alert, animated: true)
+    }
 }
 
 extension PeopleViewController: UICollectionViewDataSource {
@@ -197,7 +221,9 @@ extension PeopleViewController: UICollectionViewDelegate {
             self?.presentRenameAlert(for: person, at: indexPath)
         })
 
-        alert.addAction(UIAlertAction(title: "Delete", style: .destructive))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+            self?.presentDeleteConfirmation(for: person, at: indexPath)
+        })
 
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
 
