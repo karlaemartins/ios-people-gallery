@@ -29,15 +29,15 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
     @objc private func addNewPerson() {
         
         let picker = UIImagePickerController()
-           
-           picker.allowsEditing = true
-           picker.delegate = self
-           
-           present(picker, animated: true)
+        
+        picker.allowsEditing = true
+        picker.delegate = self
+        
+        present(picker, animated: true)
     }
     
     private func configureCollectionView() {
-            
+        
         let layout = UICollectionViewFlowLayout()
         
         let padding: CGFloat = 10
@@ -54,28 +54,27 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
         collectionView.register(PersonCell.self, forCellWithReuseIdentifier: PersonCell.reuseIdentifier)
         
         collectionView.dataSource = self
-
+        collectionView.delegate = self
         
         view.addSubview(collectionView)
         
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.topAnchor),
-            collectionView.leadingAnchor.constraint(
-                equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(
-                equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(
-                equalTo: view.bottomAnchor)])
-        
+            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
     }
     
     private func configureNavigationBar() {
         
-        navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewPerson))
-
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .add,
+            target: self,
+            action: #selector(addNewPerson)
+        )
     }
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
@@ -95,7 +94,11 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
     
     private func presentNameAlert(for imageName: String) {
         
-        let alert = UIAlertController(title: "New Person", message: "Enter a name", preferredStyle: .alert)
+        let alert = UIAlertController(
+            title: "New Person",
+            message: "Enter a name",
+            preferredStyle: .alert
+        )
 
         alert.addTextField()
 
@@ -106,34 +109,65 @@ final class PeopleViewController: UIViewController, UIImagePickerControllerDeleg
             guard let self else { return }
             guard let name = alert?.textFields?.first?.text else { return }
 
-            let person = Person(id: UUID(), name: name, imageName: imageName)
+            let person = Person(
+                id: UUID(),
+                name: name,
+                imageName: imageName
+            )
 
-            people.append(person)
-            
-            personStorageService.save(people: people)
+            self.people.append(person)
 
-            let indexPath = IndexPath(item: people.count - 1, section: 0)
+            self.personStorageService.save(people: self.people)
 
-            collectionView.insertItems(at: [indexPath])
+            let indexPath = IndexPath(item: self.people.count - 1, section: 0)
 
+            self.collectionView.insertItems(at: [indexPath])
         })
 
         present(alert, animated: true)
+    }
+    
+    private func presentRenameAlert(for person: Person, at indexPath: IndexPath) {
+        
+        let alert = UIAlertController(
+            title: "Rename Person",
+            message: nil,
+            preferredStyle: .alert
+        )
 
+        alert.addTextField()
+        alert.textFields?.first?.text = person.name
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        alert.addAction(UIAlertAction(title: "Save", style: .default) { [weak self, weak alert] _ in
+
+            guard let self else { return }
+            guard let newName = alert?.textFields?.first?.text else { return }
+
+            self.people[indexPath.item].name = newName
+
+            self.personStorageService.save(people: self.people)
+
+            self.collectionView.reloadItems(at: [indexPath])
+        })
+
+        present(alert, animated: true)
     }
 }
 
 extension PeopleViewController: UICollectionViewDataSource {
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        
         return people.count
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
 
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PersonCell.reuseIdentifier, for: indexPath) as? PersonCell
-        else {
+        guard let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: PersonCell.reuseIdentifier,
+            for: indexPath
+        ) as? PersonCell else {
             fatalError("Unable to dequeue PersonCell.")
         }
         
@@ -144,5 +178,29 @@ extension PeopleViewController: UICollectionViewDataSource {
         cell.configure(name: person.name, image: image)
 
         return cell
+    }
+}
+
+extension PeopleViewController: UICollectionViewDelegate {
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+
+        let person = people[indexPath.item]
+
+        let alert = UIAlertController(
+            title: "Select Action",
+            message: nil,
+            preferredStyle: .actionSheet
+        )
+
+        alert.addAction(UIAlertAction(title: "Rename", style: .default) { [weak self] _ in
+            self?.presentRenameAlert(for: person, at: indexPath)
+        })
+
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive))
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        present(alert, animated: true)
     }
 }
